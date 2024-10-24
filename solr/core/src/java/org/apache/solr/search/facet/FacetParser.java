@@ -139,8 +139,18 @@ public abstract class FacetParser<T extends FacetRequest> {
     return parseFacetOrStat(key, type, args);
   }
 
+  /** Extension point for custom facets and aggs */
   public interface ParseHandler {
-    Object doParse(FacetParser<?> parent, String key, Object args) throws SyntaxError;
+    /**
+     * Parse a facet or stat based on the type and arguments provided.
+     *
+     * @param parent parent parser
+     * @param key facet or agg key
+     * @param args value of facet to parse
+     * @return either FacetRequest of AggValueSource subclass instance
+     * @throws SyntaxError on unexpected values
+     */
+    Object parse(FacetParser<?> parent, String key, Object args) throws SyntaxError;
   }
 
   private static final Map<String, ParseHandler> REGISTERED_TYPES = new ConcurrentHashMap<>();
@@ -162,7 +172,7 @@ public abstract class FacetParser<T extends FacetRequest> {
   public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
     ParseHandler parseHandler = REGISTERED_TYPES.get(type);
     if (parseHandler != null) {
-      return parseHandler.doParse(this, key, args);
+      return parseHandler.parse(this, key, args);
     }
 
     throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
